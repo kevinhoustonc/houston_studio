@@ -27,7 +27,10 @@ export default function AdminPage() {
   });
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"leads" | "testimonios">("leads");
+  const [activeTab, setActiveTab] = useState<"buzon" | "leads" | "testimonios">("buzon");
+
+  // Buzón state
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,6 +185,21 @@ export default function AdminPage() {
         {/* Tabs */}
         <div className="flex gap-4 mb-6 border-b border-white/5">
           <button
+            onClick={() => { setActiveTab("buzon"); setSelectedLead(null); }}
+            className={`pb-3 text-sm font-medium transition-colors ${
+              activeTab === "buzon"
+                ? "text-gold border-b-2 border-gold"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            Buzón
+            {leads.filter((l) => l.estado === "nuevo").length > 0 && (
+              <span className="ml-2 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                {leads.filter((l) => l.estado === "nuevo").length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab("leads")}
             className={`pb-3 text-sm font-medium transition-colors ${
               activeTab === "leads"
@@ -202,6 +220,160 @@ export default function AdminPage() {
             Testimonios
           </button>
         </div>
+
+        {activeTab === "buzon" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Lista de mensajes */}
+            <div className="lg:col-span-1 space-y-2 max-h-[70vh] overflow-y-auto pr-2">
+              {leads.length === 0 && (
+                <p className="text-gray-500 text-center py-12">No hay mensajes.</p>
+              )}
+              {leads.map((lead) => (
+                <button
+                  key={lead.id}
+                  onClick={() => setSelectedLead(lead)}
+                  className={`w-full text-left p-4 rounded-lg border transition-all ${
+                    selectedLead?.id === lead.id
+                      ? "bg-gold/10 border-gold/30"
+                      : "bg-studio-gray border-white/5 hover:border-white/10"
+                  }`}
+                  aria-label={`Mensaje de ${lead.nombre}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-sm font-medium ${lead.estado === "nuevo" ? "text-white" : "text-gray-400"}`}>
+                      {lead.nombre}
+                    </span>
+                    {lead.estado === "nuevo" && (
+                      <span className="w-2 h-2 rounded-full bg-gold flex-shrink-0" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gold mb-1">{lead.servicio}</p>
+                  <p className="text-xs text-gray-500 truncate">{lead.descripcion}</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {new Date(lead.created_at).toLocaleDateString("es-PY", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </button>
+              ))}
+            </div>
+
+            {/* Detalle del mensaje */}
+            <div className="lg:col-span-2">
+              {selectedLead ? (
+                <div className="bg-studio-gray border border-white/5 rounded-lg p-6">
+                  {/* Header del mensaje */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h3 className="text-xl font-semibold text-white">{selectedLead.nombre}</h3>
+                      <p className="text-gray-400 text-sm">{selectedLead.email}</p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        {selectedLead.empresa} &middot;{" "}
+                        {new Date(selectedLead.created_at).toLocaleDateString("es-PY", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs px-2 py-1 rounded flex-shrink-0 ${
+                        selectedLead.estado === "nuevo"
+                          ? "bg-blue-500/20 text-blue-300"
+                          : selectedLead.estado === "contactado"
+                          ? "bg-green-500/20 text-green-300"
+                          : "bg-gray-500/20 text-gray-300"
+                      }`}
+                    >
+                      {selectedLead.estado}
+                    </span>
+                  </div>
+
+                  {/* Info cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                    <div className="bg-studio-black rounded-lg p-3">
+                      <p className="text-gray-500 text-xs mb-1">Servicio solicitado</p>
+                      <p className="text-gold text-sm font-medium">{selectedLead.servicio}</p>
+                    </div>
+                    <div className="bg-studio-black rounded-lg p-3">
+                      <p className="text-gray-500 text-xs mb-1">Empresa</p>
+                      <p className="text-white text-sm">{selectedLead.empresa}</p>
+                    </div>
+                    <div className="bg-studio-black rounded-lg p-3">
+                      <p className="text-gray-500 text-xs mb-1">Presupuesto</p>
+                      <p className="text-white text-sm">{selectedLead.presupuesto || "No especificado"}</p>
+                    </div>
+                  </div>
+
+                  {/* Mensaje */}
+                  <div className="mb-6">
+                    <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Mensaje</p>
+                    <div className="bg-studio-black rounded-lg p-4">
+                      <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                        {selectedLead.descripcion}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="flex flex-wrap gap-3 pt-4 border-t border-white/5">
+                    <a
+                      href={`mailto:${selectedLead.email}?subject=Houston Studio - Re: ${selectedLead.servicio}&body=Hola ${selectedLead.nombre},%0D%0A%0D%0AGracias por contactarnos sobre ${selectedLead.servicio}.%0D%0A%0D%0A`}
+                      className="px-4 py-2 bg-gold text-studio-black text-sm font-semibold rounded hover:bg-gold-light transition-colors"
+                      aria-label="Responder por email"
+                    >
+                      Responder por email
+                    </a>
+                    <a
+                      href={`https://wa.me/?text=Hola ${selectedLead.nombre}, gracias por contactar a Houston Studio sobre ${selectedLead.servicio}.`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded hover:bg-green-500 transition-colors"
+                      aria-label="Responder por WhatsApp"
+                    >
+                      WhatsApp
+                    </a>
+                    {selectedLead.estado === "nuevo" && (
+                      <button
+                        onClick={() => {
+                          updateLeadEstado(selectedLead.id, "contactado");
+                          setSelectedLead({ ...selectedLead, estado: "contactado" });
+                        }}
+                        className="px-4 py-2 border border-green-500/30 text-green-400 text-sm rounded hover:bg-green-500/10 transition-colors"
+                      >
+                        Marcar como contactado
+                      </button>
+                    )}
+                    {selectedLead.estado === "contactado" && (
+                      <button
+                        onClick={() => {
+                          updateLeadEstado(selectedLead.id, "cerrado");
+                          setSelectedLead({ ...selectedLead, estado: "cerrado" });
+                        }}
+                        className="px-4 py-2 border border-white/10 text-gray-400 text-sm rounded hover:bg-white/5 transition-colors"
+                      >
+                        Cerrar lead
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-studio-gray border border-white/5 rounded-lg p-12 text-center">
+                  <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-gray-500 text-sm">Seleccioná un mensaje para leerlo</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {activeTab === "leads" && (
           <>
