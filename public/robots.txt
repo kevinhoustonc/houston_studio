@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://houstonstudio.com.py/sitemap.xml
